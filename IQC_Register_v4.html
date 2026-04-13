@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IQC Register</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1a3c6e;--navy2:#254f8e;--green:#2e7d32;--green2:#388e3c;
+  --red:#c62828;--amber:#e65100;--blue:#1565c0;--bg:#f0f2f5;
+  --white:#fff;--border:#e0e0e0;--text:#222;--sub:#666;--light:#f9f9f9;
+  --radius:10px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--navy);color:#fff;display:flex;align-items:center;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.3);min-height:52px}
+.nav-title{padding:0 14px;font-size:15px;font-weight:700;flex:1;white-space:nowrap}
+.nav-user{padding:0 10px;font-size:12px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:6px}
+.nav-user span{background:rgba(255,255,255,.15);padding:3px 8px;border-radius:12px;font-weight:600;color:#fff;font-size:11px}
+.hamburger{padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.hamburger div{width:20px;height:2px;background:#fff;border-radius:2px}
+
+/* SIDE DRAWER */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;opacity:0;transition:.2s}
+.drawer-overlay.open{display:block;opacity:1}
+.drawer{position:fixed;top:0;left:-260px;width:260px;height:100%;background:var(--white);z-index:301;transition:.25s;box-shadow:4px 0 20px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.drawer.open{left:0}
+.drawer-header{background:var(--navy);color:#fff;padding:20px 16px;padding-top:calc(20px + env(safe-area-inset-top))}
+.drawer-header h2{font-size:16px;font-weight:700;margin-bottom:4px}
+.drawer-header p{font-size:12px;opacity:.7}
+.drawer-nav{flex:1;overflow-y:auto;padding:8px 0}
+.dnav-item{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text);border-left:3px solid transparent;transition:.15s}
+.dnav-item:hover{background:var(--bg);color:var(--navy)}
+.dnav-item.active{background:#e3f2fd;color:var(--navy);border-left-color:var(--navy);font-weight:700}
+.dnav-item .icon{font-size:18px;width:22px;text-align:center}
+.drawer-footer{padding:16px;border-top:1px solid var(--border)}
+.logout-btn{width:100%;padding:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;color:var(--red);cursor:pointer}
+
+/* PAGES */
+.page{display:none;padding:12px;max-width:900px;margin:0 auto;padding-bottom:80px}
+.page.active{display:block}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--navy)}
+.login-box{background:#fff;border-radius:16px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo h1{color:var(--navy);font-size:20px;font-weight:800;letter-spacing:.5px}
+.login-logo p{color:var(--sub);font-size:12px;margin-top:4px}
+.login-box h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:12px;color:#555;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.field input,.field select,.field textarea{padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:.2s;background:#fff;width:100%;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,60,110,.1)}
+.field.full{grid-column:1/-1}
+.btn{padding:12px 20px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy2)}
+.btn-primary:active{transform:scale(.98)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover{background:var(--green2)}
+.btn-danger{background:var(--red);color:#fff;padding:7px 14px;font-size:12px}
+.btn-outline{background:#fff;border:1.5px solid var(--navy);color:var(--navy)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-amber{background:var(--amber);color:#fff;padding:7px 14px;font-size:12px}
+.btn-block{width:100%;justify-content:center}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:600px){.cards{grid-template-columns:repeat(4,1fr)}}
+.card{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.card-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.card-value{font-size:22px;font-weight:800;color:var(--navy)}
+.card-sub{font-size:11px;color:#888;margin-top:2px}
+.card.green .card-value{color:var(--green)}
+.card.red .card-value{color:var(--red)}
+.card.amber .card-value{color:var(--amber)}
+
+/* FORM GRID */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr}}
+.form-wrap{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:14px}
+
+/* ALERTS */
+.alert{padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;font-weight:600}
+.alert-success{background:#e8f5e9;color:var(--green);border:1px solid #a5d6a7}
+.alert-error{background:#ffebee;color:var(--red);border:1px solid #ef9a9a}
+.alert-info{background:#e3f2fd;color:var(--blue);border:1px solid #90caf9}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;background:#fff;border-radius:var(--radius);box-shadow:0 1px 4px rgba(0,0,0,.07);margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-size:11px;font-weight:600;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-green{background:#e8f5e9;color:var(--green)}
+.badge-red{background:#ffebee;color:var(--red)}
+.badge-amber{background:#fff3e0;color:var(--amber)}
+.badge-blue{background:#e3f2fd;color:var(--blue)}
+.badge-gray{background:#f5f5f5;color:#555}
+
+/* FILTERS */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.filters select,.filters input{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;flex:1;min-width:120px}
+.filters select:focus,.filters input:focus{border-color:var(--navy)}
+
+/* SEARCHABLE DROPDOWN */
+.search-dropdown{position:relative}
+.search-dropdown input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:.2s;background:#fff}
+.search-dropdown input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,60,110,.1)}
+.search-dropdown .dd-list{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1.5px solid var(--navy);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none}
+.search-dropdown .dd-list.open{display:block}
+.search-dropdown .dd-item{padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+.search-dropdown .dd-item:hover{background:#e3f2fd;color:var(--navy)}
+.search-dropdown .dd-item:last-child{border-bottom:none}
+.search-dropdown .dd-empty{padding:10px 12px;font-size:13px;color:#aaa;text-align:center}
+
+/* MANAGE */
+.manage-row{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:600px){.manage-row{grid-template-columns:1fr 1fr}}
+.manage-box{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.manage-box h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.tag-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;max-height:180px;overflow-y:auto}
+.tag{display:flex;align-items:center;gap:6px;background:#e3f2fd;color:var(--blue);padding:5px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.tag button{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;line-height:1;padding:0}
+.add-row{display:flex;gap:8px}
+.add-row input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none}
+.add-row input:focus{border-color:var(--navy)}
+.member-row{display:flex;align-items:center;gap:10px;padding:10px;background:var(--light);border-radius:var(--radius-sm);margin-bottom:6px}
+.member-avatar{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:13px;font-weight:600;color:var(--text)}
+.member-id{font-size:11px;color:var(--sub)}
+.member-role{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.role-admin{background:#fff3e0;color:var(--amber)}
+.role-member{background:#e8f5e9;color:var(--green)}
+
+/* CHART */
+.chart-row{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:14px}
+@media(min-width:600px){.chart-row{grid-template-columns:1fr 1fr}}
+.chart-box{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.chart-box h3{font-size:12px;font-weight:600;color:#555;margin-bottom:10px}
+
+/* TOAST */
+#toastMsg{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 22px;border-radius:24px;font-size:13px;z-index:9999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.25);white-space:nowrap}
+
+/* SECTION TITLE */
+.section-title{font-size:14px;font-weight:700;color:var(--navy);margin:14px 0 10px;display:flex;align-items:center;gap:6px}
+
+/* SUPPLIER BARS */
+.supplier-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.supplier-bar-label{font-size:11px;color:#444;width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.supplier-bar-track{flex:1;background:#f0f0f0;border-radius:4px;height:12px}
+.supplier-bar-fill{background:var(--red);border-radius:4px;height:12px;transition:.5s}
+.supplier-bar-val{font-size:11px;font-weight:700;color:var(--red);min-width:32px;text-align:right}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+@media(min-width:600px){.modal-overlay.open{align-items:center}}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+@media(min-width:600px){.modal{border-radius:16px}}
+.modal-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--sub);padding:0;line-height:1}
+
+/* REALTIME INDICATOR */
+.rt-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4caf50;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.rt-bar{background:var(--navy2);color:#fff;padding:6px 14px;font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;transition:.3s}
+.rt-bar.offline{background:#b71c1c}
+.rt-bar.online{background:#1b5e20}
+
+/* MOBILE BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:150;box-shadow:0 -2px 12px rgba(0,0,0,.08)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px;cursor:pointer;font-size:10px;color:var(--sub);font-weight:500;gap:2px;transition:.15s}
+.bnav-item.active{color:var(--navy)}
+.bnav-item .bicon{font-size:20px;line-height:1}
+.bnav-item.active .bicon{transform:scale(1.1)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:50px 20px;color:#aaa}
+.empty-state .eicon{font-size:48px;margin-bottom:10px}
+.empty-state p{font-size:14px}
+
+/* REAL TIME BADGE */
+.new-badge{background:#e8f5e9;color:var(--green);font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px;animation:flash .8s ease}
+@keyframes flash{0%{opacity:0}100%{opacity:1}}
+
+/* MONTH FILTER */
+.month-filter{padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none}
+.month-filter:focus{border-color:var(--navy)}
+
+/* ADMIN LOCK */
+.admin-only{position:relative}
+.admin-lock{position:absolute;inset:0;background:rgba(255,255,255,.85);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:13px;color:#888;gap:8px;z-index:10}
+</style>
+</head>
+<body>
+
+<!-- SETUP GUIDE SCREEN -->
+<div id="setupScreen" style="display:none">
+  <div style="min-height:100vh;background:#1a3c6e;padding:20px;overflow-y:auto">
+    <div style="max-width:500px;margin:0 auto">
+      <div style="text-align:center;padding:24px 0 16px">
+        <div style="font-size:36px">🚀</div>
+        <h1 style="color:#fff;font-size:20px;font-weight:800;margin-top:8px">One-Time Setup Required</h1>
+        <p style="color:rgba(255,255,255,.7);font-size:13px;margin-top:6px">To share data across all team members, host this file online (free, 5 minutes)</p>
+      </div>
+
+      <div style="background:#fff3e0;border-radius:12px;padding:16px;margin-bottom:16px;border:2px solid #ff8f00">
+        <div style="font-weight:700;color:#e65100;font-size:13px;margin-bottom:6px">⚠️ Why you're seeing this</div>
+        <div style="font-size:12px;color:#555;line-height:1.6">You opened this file directly from your computer/phone (<code style="background:#f0f0f0;padding:1px 5px;border-radius:3px">file://</code>). Firebase blocks this for security. The file must be hosted at a real URL so everyone can open it in Chrome.</div>
+      </div>
+
+      <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:12px">
+        <div style="font-weight:700;color:#1a3c6e;font-size:14px;margin-bottom:12px">📋 Option 1: GitHub Pages (Free, Recommended)</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="background:#1a3c6e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+            <div style="font-size:13px;color:#333;line-height:1.5">Go to <strong>github.com</strong> → Create free account → Click <strong>New repository</strong> → Name it <code style="background:#f0f0f0;padding:1px 5px;border-radius:3px">iqc-register</code> → Public → Create</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="background:#1a3c6e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+            <div style="font-size:13px;color:#333;line-height:1.5">Click <strong>uploading an existing file</strong> → Upload <strong>IQC_Register_v4.html</strong> → Rename it to <code style="background:#f0f0f0;padding:1px 5px;border-radius:3px">index.html</code> → Commit</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="background:#1a3c6e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+            <div style="font-size:13px;color:#333;line-height:1.5">Go to <strong>Settings → Pages → Branch: main → Save</strong>. Your URL will be: <br><code style="background:#e3f2fd;padding:3px 8px;border-radius:4px;color:#1565c0;font-size:12px">https://yourusername.github.io/iqc-register/</code></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="background:#2e7d32;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">4</div>
+            <div style="font-size:13px;color:#333;line-height:1.5"><strong>Share that URL</strong> with all team members. They open it in Chrome on their phone — done! ✅</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:12px">
+        <div style="font-weight:700;color:#1a3c6e;font-size:14px;margin-bottom:10px">🔥 Also fix Firebase Database Rules</div>
+        <div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Go to <strong>console.firebase.google.com</strong> → Your project → Realtime Database → Rules → Replace with:</div>
+        <div style="background:#1a1a2e;color:#4fc3f7;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;line-height:1.8">
+          {<br>
+          &nbsp;&nbsp;"rules": {<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;".read": true,<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;".write": true<br>
+          &nbsp;&nbsp;}<br>
+          }
+        </div>
+        <div style="font-size:12px;color:#888;margin-top:8px">Click <strong>Publish</strong> after pasting.</div>
+      </div>
+
+      <div style="background:#e8f5e9;border-radius:12px;padding:14px;margin-bottom:20px;border:1px solid #a5d6a7">
+        <div style="font-size:12px;color:#2e7d32;line-height:1.6"><strong>✅ Once hosted:</strong> All team members open the same URL in Chrome. Data saves to Firebase. Everyone sees updates in real time. Team IDs persist forever.</div>
+      </div>
+
+      <button onclick="document.getElementById('setupScreen').style.display='none';document.getElementById('loginScreen').style.display='flex';" style="width:100%;padding:14px;background:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;color:#1a3c6e;cursor:pointer">← Back to Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-logo">
+        <h1>IQC Register</h1>
+        <p>Incoming Quality Control System</p>
+      </div>
+      <div id="fileWarning" style="display:none;background:#fff3e0;border:1.5px solid #ff8f00;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#e65100;line-height:1.6">
+        ⚠️ <strong>File opened locally.</strong> Real-time sync won't work. Team members won't see each other's data.<br>
+        <span style="text-decoration:underline;cursor:pointer;font-weight:700" onclick="document.getElementById('loginScreen').style.display='none';document.getElementById('setupScreen').style.display='flex'">👉 Tap here to see how to fix this (5 min setup)</span>
+      </div>
+      <div id="loginAlert"></div>
+      <div class="field">
+        <label>Select Your Name</label>
+        <select id="loginUser" style="padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;width:100%">
+          <option value="">-- Select member --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Password / PIN</label>
+        <input type="password" id="loginPin" placeholder="Enter your PIN" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" style="margin-top:4px" onclick="doLogin()">Sign In →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div class="rt-bar"><span class="rt-dot"></span><span id="rtStatus">Connecting to real-time sync…</span></div>
+
+  <!-- TOP NAV -->
+  <div class="nav">
+    <div class="hamburger" onclick="toggleDrawer()">
+      <div></div><div></div><div></div>
+    </div>
+    <div class="nav-title">■ IQC Register</div>
+    <div class="nav-user"><span id="navUserName">User</span></div>
+  </div>
+
+  <!-- SIDE DRAWER -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h2>IQC Register</h2>
+      <p id="drawerUserInfo">Member</p>
+    </div>
+    <div class="drawer-nav">
+      <div class="dnav-item active" onclick="showPage('dashboard');toggleDrawer()"><span class="icon">📊</span>Dashboard</div>
+      <div class="dnav-item" onclick="showPage('entry');toggleDrawer()"><span class="icon">➕</span>New Entry</div>
+      <div class="dnav-item" onclick="showPage('register');toggleDrawer()"><span class="icon">📋</span>Register</div>
+      <div class="dnav-item admin-nav" onclick="showPage('manage');toggleDrawer()"><span class="icon">⚙️</span>Manage <small style="font-size:10px;margin-left:4px;opacity:.6">(Admin)</small></div>
+    </div>
+    <div class="drawer-footer">
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- PAGES -->
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="section-title" style="margin:0">📊 Monthly Overview</div>
+      <select id="dashMonthFilter" class="month-filter" onchange="renderDashboard()"><option value="all">All Months</option></select>
+    </div>
+    <div class="cards" id="summaryCards"></div>
+    <div class="chart-row">
+      <div class="chart-box">
+        <h3>Acceptance vs Rejection %</h3>
+        <div style="position:relative;height:200px"><canvas id="monthlyChart"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <h3>Top Rejected Suppliers</h3>
+        <div id="supplierBars"></div>
+      </div>
+    </div>
+    <div class="chart-box" style="margin-bottom:12px">
+      <h3>Rejection by Reason</h3>
+      <div style="position:relative;height:200px"><canvas id="reasonChart"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3>Monthly Inspected Quantity</h3>
+      <div style="position:relative;height:180px"><canvas id="qtyChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ENTRY FORM -->
+  <div id="page-entry" class="page">
+    <div class="alert alert-info" style="margin-bottom:12px;font-weight:400">📋 Fill inspection details. Data syncs to all team members in real time.</div>
+    <div id="entryAlert"></div>
+    <div class="form-wrap">
+      <div class="form-grid">
+        <div class="field"><label>INV Date *</label><input type="date" id="f_invDate"></div>
+        <div class="field"><label>Received Date *</label><input type="date" id="f_recDate"></div>
+        <div class="field"><label>Inspection Date *</label><input type="date" id="f_inspDate"></div>
+        <div class="field"><label>Invoice No *</label><input type="text" id="f_invNo" placeholder="e.g. JS/2025-26/02611"></div>
+
+        <div class="field full">
+          <label>Supplier Name *</label>
+          <div class="search-dropdown" id="dd_supplier">
+            <input type="text" id="f_supplier_search" placeholder="Search supplier..." autocomplete="off" oninput="filterDD('supplier')" onfocus="openDD('supplier')" onblur="blurDD('supplier')">
+            <input type="hidden" id="f_supplier">
+            <div class="dd-list" id="dd_supplier_list"></div>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label>Part No *</label>
+          <div class="search-dropdown" id="dd_partNo">
+            <input type="text" id="f_partNo_search" placeholder="Search part no..." autocomplete="off" oninput="filterDD('partNo')" onfocus="openDD('partNo')" onblur="blurDD('partNo')">
+            <input type="hidden" id="f_partNo">
+            <div class="dd-list" id="dd_partNo_list"></div>
+          </div>
+        </div>
+
+        <div class="field full"><label>Part Description</label><input type="text" id="f_partDesc" placeholder="Auto-filled from Part No" readonly style="background:#f9f9f9"></div>
+        <div class="field"><label>Received QTY *</label><input type="number" id="f_recQty" min="0" oninput="calcReject()" inputmode="numeric"></div>
+        <div class="field"><label>Inspected QTY *</label><input type="number" id="f_inspQty" min="0" oninput="calcReject()" inputmode="numeric"></div>
+        <div class="field"><label>OK Qty *</label><input type="number" id="f_okQty" min="0" oninput="calcReject()" inputmode="numeric"></div>
+        <div class="field"><label>Reject QTY</label><input type="number" id="f_rejectQty" min="0" readonly style="background:#f9f9f9"></div>
+        <div class="field"><label>Rejection %</label><input type="text" id="f_rejectPct" readonly style="background:#f9f9f9"></div>
+        <div class="field">
+          <label>Status</label>
+          <select id="f_status">
+            <option value="CLOSED">CLOSED</option>
+            <option value="REJECT">REJECT</option>
+            <option value="Rework">Rework</option>
+            <option value="HOLD">HOLD</option>
+            <option value="Segregation">Segregation</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>PDI/MTC Report</label>
+          <select id="f_pdi">
+            <option value="">N/A</option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
+        </div>
+        <div class="field full"><label>Inspector Name</label><input type="text" id="f_inspector" readonly style="background:#f9f9f9"></div>
+        <div class="field full"><label>Reason of Rejection</label><input type="text" id="f_reason" placeholder="e.g. Crack, Blow hole, Dimension issue"></div>
+        <div class="field full"><label>Remark</label><textarea id="f_remark" rows="2" placeholder="Any additional remark..." style="padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;resize:vertical;width:100%;font-family:inherit"></textarea></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-success" onclick="submitEntry()">✓ Save Inspection</button>
+        <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER TABLE -->
+  <div id="page-register" class="page">
+    <div class="filters">
+      <select id="filterMonth" onchange="renderRegister()"><option value="">All Months</option></select>
+      <select id="filterSupplier" onchange="renderRegister()"><option value="">All Suppliers</option></select>
+      <select id="filterStatus" onchange="renderRegister()">
+        <option value="">All Status</option>
+        <option value="CLOSED">CLOSED</option>
+        <option value="REJECT">REJECT</option>
+        <option value="Rework">Rework</option>
+        <option value="HOLD">HOLD</option>
+        <option value="Segregation">Segregation</option>
+      </select>
+    </div>
+    <div class="filters" style="margin-top:-4px">
+      <input type="text" id="filterPartNo" placeholder="🔍 Search Part No..." oninput="renderRegister()" style="flex:1">
+      <input type="text" id="filterSupplierSearch" placeholder="🔍 Search Supplier..." oninput="renderRegister()" style="flex:1">
+    </div>
+    <div id="registerStats" style="margin-bottom:8px;font-size:12px;color:var(--sub)"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>INV Date</th><th>Inv No</th><th>Supplier</th><th>Part No</th>
+            <th>OK</th><th>Reject</th><th>Rej%</th><th>Status</th><th>Inspector</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="registerBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MANAGE -->
+  <div id="page-manage" class="page">
+    <div id="manageAlert"></div>
+    <div id="manageLockOverlay" class="alert alert-error" style="display:none">🔒 Admin access only. You do not have permission to manage settings.</div>
+
+    <div id="manageContent">
+      <!-- TEAM MEMBERS -->
+      <div class="manage-box" style="margin-bottom:14px">
+        <h3>👥 Team Members</h3>
+        <div id="memberList"></div>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+          <div class="section-title" style="margin-top:0">Add New Member</div>
+          <div class="form-grid" style="margin-bottom:10px">
+            <div class="field"><label>Full Name</label><input type="text" id="newMemberName" placeholder="e.g. Rahul Kumar"></div>
+            <div class="field"><label>Member ID</label><input type="text" id="newMemberId" placeholder="e.g. MEM001"></div>
+            <div class="field"><label>PIN (4–6 digits)</label><input type="password" id="newMemberPin" placeholder="Enter PIN" maxlength="6"></div>
+            <div class="field"><label>Role</label>
+              <select id="newMemberRole">
+                <option value="member">Team Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addMember()">Add Member</button>
+        </div>
+      </div>
+
+      <div class="manage-row">
+        <div class="manage-box">
+          <h3>🏭 Suppliers</h3>
+          <div class="add-row" style="margin-bottom:10px">
+            <input type="text" id="newSupplier" placeholder="Supplier name..." onkeydown="if(event.key==='Enter')addSupplier()">
+            <button class="btn btn-primary btn-sm" onclick="addSupplier()">Add</button>
+          </div>
+          <div class="tag-list" id="supplierTags"></div>
+        </div>
+        <div class="manage-box">
+          <h3>📄 Parts</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+            <input type="text" id="newPartNo" placeholder="Part No" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none">
+            <input type="text" id="newPartDesc" placeholder="Part Description" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none">
+            <button class="btn btn-primary btn-sm" onclick="addPart()" style="align-self:flex-start">Add Part</button>
+          </div>
+          <div class="tag-list" id="partTags"></div>
+        </div>
+      </div>
+
+      <div class="manage-box" style="margin-top:14px">
+        <h3>📥 Export Data</h3>
+        <p style="font-size:13px;color:var(--sub);margin-bottom:12px">Download all IQC records as CSV for Excel / Google Sheets.</p>
+        <button class="btn btn-primary" onclick="exportCSV()">⬇ Download CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="bnav-item active" id="bn_dashboard" onclick="showPage('dashboard')"><div class="bicon">📊</div>Dashboard</div>
+    <div class="bnav-item" id="bn_entry" onclick="showPage('entry')"><div class="bicon">➕</div>Entry</div>
+    <div class="bnav-item" id="bn_register" onclick="showPage('register')"><div class="bicon">📋</div>Register</div>
+    <div class="bnav-item" id="bn_manage" onclick="showPage('manage')"><div class="bicon">⚙️</div>Manage</div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">
+      Edit Record
+      <button class="modal-close" onclick="closeEditModal()">×</button>
+    </div>
+    <div id="editAlert"></div>
+    <div class="form-grid">
+      <div class="field"><label>OK Qty *</label><input type="number" id="e_okQty" min="0" oninput="calcEditReject()" inputmode="numeric"></div>
+      <div class="field"><label>NG / Reject QTY</label><input type="number" id="e_rejectQty" readonly style="background:#f9f9f9"></div>
+      <div class="field"><label>Status</label>
+        <select id="e_status">
+          <option value="CLOSED">CLOSED</option>
+          <option value="REJECT">REJECT</option>
+          <option value="Rework">Rework</option>
+          <option value="HOLD">HOLD</option>
+          <option value="Segregation">Segregation</option>
+        </select>
+      </div>
+      <div class="field"><label>PDI/MTC Report</label>
+        <select id="e_pdi">
+          <option value="">N/A</option>
+          <option value="YES">YES</option>
+          <option value="NO">NO</option>
+        </select>
+      </div>
+      <div class="field full"><label>Reason of Rejection</label><input type="text" id="e_reason" placeholder="e.g. Crack, Dimension issue"></div>
+      <div class="field full"><label>Remark</label><textarea id="e_remark" rows="2" style="padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;resize:vertical;width:100%;font-family:inherit"></textarea></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-success" onclick="saveEdit()">✓ Save Changes</button>
+      <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastMsg"></div>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// FIREBASE CONFIG — replace with your own Firebase project details
+// HOW TO SET UP (FREE):
+//   1. Go to https://console.firebase.google.com
+//   2. Create a new project → "IQC Register"
+//   3. Add a Web App → copy the firebaseConfig below
+//   4. In Realtime Database → Create database → Start in test mode
+//   5. Paste your config values below and save the file
+// ═══════════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyAXD5GiowTqfiW8np10IyHymC7MLuG22Hs",
+  authDomain: "iqc-register.firebaseapp.com",
+  databaseURL: "https://iqc-register-default-rtdb.firebaseio.com", 
+  projectId: "iqc-register",
+  storageBucket: "iqc-register.firebasestorage.app",
+  messagingSenderId: "1042437536966",
+  appId: "1:1042437536966:web:98523e95f41ddd3f67abc7"
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// LOCAL FALLBACK — works without Firebase for single-device testing
+// When Firebase is configured, all data syncs in real time
+// ═══════════════════════════════════════════════════════════════════
+let useFirebase = false;
+let db = null;
+let firebaseReady = false;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  // Only treat as real config if databaseURL is set and not placeholder
+  useFirebase = !!(firebaseConfig.databaseURL && firebaseConfig.databaseURL.includes('firebaseio.com') && firebaseConfig.apiKey !== "YOUR_API_KEY");
+} catch(e) { useFirebase = false; console.warn('Firebase init error:', e); }
+
+// ── SEED DATA ──────────────────────────────────────────────────────
+const SEED_SUPPLIERS = ["ANSHI POLYMERS","ASHISH MANUFACTURING","ELECTRONICA HOUSE","INDO-TECH MAGNETICS","J&S WIRELINKS","KAMESHWAR POLYMER","LUTHRA INTERFACE","NOIDA","OM FARSTNERS","PSI PHI INDIA","PSIL","RFNT","SABA PLASTIC","SAI ADHESIVES","SAISON","SHENZHEN MAOYUAN","SHREYANSH IMPEX","SIDDHANT INDUSTRIES","STELLAR PLATINUM ASSETS","SUMIT INDUSTRIES","THE GLOBAL AUTOMOTIVE","VICTOR MAGNETICS"];
+const SEED_PARTS = [{"partNo":"VECMMA0274","desc":"SB75 DC Wire Assembly 1.5m length"},{"partNo":"VECMMC1613","desc":"1.5kW Charger casing with integrated aluminium block"},{"partNo":"VECMMC2625","desc":"750W Charger Casing"},{"partNo":"VECMMC1961","desc":"POWDER COATING"},{"partNo":"VECMMH0290","desc":"Charger Handle"},{"partNo":"VECMMP3370","desc":"Thermal Pad mosfet bottom (32x42x4)"},{"partNo":"VECMMP3369","desc":"Thermal Pad shunt bottom (13x9x4)"},{"partNo":"VECMMG0267","desc":"Fan Grill 3X3 inch"},{"partNo":"VECMMH3196","desc":"HNS103FB3950F004XD4602 4x2 NTC"},{"partNo":"VECMMH3818","desc":"HNS103FB3950F0100D5319 2x1 NTC"},{"partNo":"VECMMA0273","desc":"AC CONNECTOR ASSY."},{"partNo":"VECMMS1810","desc":"750W STICKER"},{"partNo":"VECMMH0271","desc":"FFC CABLE"},{"partNo":"VECMM0277","desc":"Daughter board casing (bottom)"},{"partNo":"VECMM0269","desc":"Daughter board casing (top)"},{"partNo":"VECMMS0528","desc":"Screw M3x12mm with washer / HEAD BOLT"},{"partNo":"VECMMS3368","desc":"SS M3*15 CSK Screw"},{"partNo":"VECMMS0526","desc":"POWER BOARD M3*6MM"},{"partNo":"VECMMS0529","desc":"Screw AC/DC Ring terminal M4X0.7X6"},{"partNo":"VECMMH0274","desc":"SB75 DC Wire Assembly 1.5m length"},{"partNo":"VECMMF1693","desc":"DC Fan Assembly"},{"partNo":"VECMMH2493","desc":"IOT CAN WIRE HARNESS 4X1"},{"partNo":"VECMMH2494","desc":"IOT Harness 2x2"},{"partNo":"VECMMS0531","desc":"Screw M3x20mm Black CSK Phillips head"},{"partNo":"VECEMW0957","desc":"SOC Harness"},{"partNo":"VECMMH0969","desc":"Wire Harness 2Pin 3 Mtr"},{"partNo":"VECMMP0080","desc":"Thermal Pad 64.9x18.8x1.0mm"},{"partNo":"VECMMP1661","desc":"Thermal Pad 30x85x3.0mm"},{"partNo":"VECMMP1662","desc":"Thermal Pad 29x83x1.0mm"},{"partNo":"VECMMP1660","desc":"Thermal Pad 22x17x1.0mm"},{"partNo":"VECMMH2294","desc":"LC HEAT SINK TOP BATTERY SMART"},{"partNo":"VECMMH2295","desc":"LC HEAT SINK BOTTOM BATTERY SMART"},{"partNo":"VECMMS2375","desc":"M3x10mm Self tapping screw"},{"partNo":"VECMMS2261","desc":"M3x6mm Self tapping screw zinc plating"},{"partNo":"VECMMS0805","desc":"M5x8mm Pan combi screw with flat washer"},{"partNo":"VECMMP0268","desc":"Charger Pressure plate CD-74.75"},{"partNo":"VECMMP0281","desc":"Charger Pressure plate CD-40.95"},{"partNo":"VECMMP0283","desc":"Charger Pressure plate CD-57.52"},{"partNo":"VECMMA1693","desc":"750W DC Fan"},{"partNo":"VECMMB0266","desc":"1.5Kw Charger base plate MS"},{"partNo":"VECMMH2754","desc":"AC Wire harness swapping station"},{"partNo":"VECMMR0270","desc":"16A PRCD plug"},{"partNo":"VECMMH2852","desc":"DC Wire harness swapping station"},{"partNo":"VECMMF1181","desc":"Charger Mounting flange 1.2mm"}];
+
+const DEFAULT_MEMBERS = [
+  {id:"ADMIN001",name:"Admin",pin:"admin123",role:"admin"}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────
+let records = [], suppliers = [...SEED_SUPPLIERS], parts = [...SEED_PARTS];
+let members = [...DEFAULT_MEMBERS];
+let currentUser = null;
+let editingId = null;
+let editInspQty = 0;
+let monthlyChart=null, reasonChart=null, qtyChart=null;
+
+// ── LOCAL STORAGE KEYS ─────────────────────────────────────────────
+const LS = {
+  records:'iqc_records_v3', suppliers:'iqc_suppliers_v3',
+  parts:'iqc_parts_v3', members:'iqc_members_v3'
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA LAYER — Firebase when configured, localStorage fallback
+// ═══════════════════════════════════════════════════════════════════
+function saveAll() {
+  if (useFirebase) {
+    db.ref('iqc/suppliers').set(suppliers);
+    db.ref('iqc/parts').set(parts);
+    db.ref('iqc/members').set(members);
+  } else {
+    localStorage.setItem(LS.suppliers, JSON.stringify(suppliers));
+    localStorage.setItem(LS.parts, JSON.stringify(parts));
+    localStorage.setItem(LS.members, JSON.stringify(members));
+  }
+}
+
+function saveRecord(rec) {
+  if (useFirebase) {
+    db.ref('iqc/records/' + rec._id).set(rec);
+  } else {
+    const idx = records.findIndex(r => r._id === rec._id);
+    if (idx >= 0) records[idx] = rec; else records.push(rec);
+    localStorage.setItem(LS.records, JSON.stringify(records));
+  }
+}
+
+function deleteRecordData(id) {
+  if (useFirebase) {
+    db.ref('iqc/records/' + id).remove();
+  } else {
+    records = records.filter(r => r._id !== id);
+    localStorage.setItem(LS.records, JSON.stringify(records));
+  }
+}
+
+function initData() {
+  if (useFirebase) {
+    document.getElementById('rtStatus').textContent = 'Connecting…';
+
+    // Monitor connection state
+    db.ref('.info/connected').on('value', snap => {
+      const connected = snap.val();
+      const bar = document.querySelector('.rt-bar');
+      if (connected) {
+        document.getElementById('rtStatus').textContent = '🟢 Live — real-time sync active';
+        if(bar){bar.classList.remove('offline');bar.classList.add('online');}
+      } else {
+        document.getElementById('rtStatus').textContent = '🔴 Reconnecting… (check internet)';
+        if(bar){bar.classList.remove('online');bar.classList.add('offline');}
+      }
+    });
+
+    // Real-time listeners with error handling
+    db.ref('iqc/records').on('value', snap => {
+      const val = snap.val();
+      records = val ? Object.values(val) : [];
+      renderDashboard(); renderRegister();
+      document.getElementById('rtStatus').textContent = '🟢 Live — synced ' + new Date().toLocaleTimeString();
+    }, err => {
+      console.error('Records listener error:', err);
+      document.getElementById('rtStatus').textContent = '⚠ Sync error: ' + err.message;
+    });
+
+    db.ref('iqc/suppliers').on('value', snap => {
+      const val = snap.val();
+      if (val) suppliers = Array.isArray(val) ? val : Object.values(val);
+      renderManage(); populateFormSelects();
+    });
+
+    db.ref('iqc/parts').on('value', snap => {
+      const val = snap.val();
+      if (val) parts = Array.isArray(val) ? val : Object.values(val);
+      renderManage(); populateFormSelects();
+    });
+
+    db.ref('iqc/members').on('value', snap => {
+      const val = snap.val();
+      if (val) members = Array.isArray(val) ? val : Object.values(val);
+      buildLoginDropdown(); renderManage();
+    });
+
+    // Seed if empty
+    db.ref('iqc/suppliers').once('value', snap => { if (!snap.val()) db.ref('iqc/suppliers').set(SEED_SUPPLIERS); });
+    db.ref('iqc/parts').once('value', snap => { if (!snap.val()) db.ref('iqc/parts').set(SEED_PARTS); });
+    db.ref('iqc/members').once('value', snap => { if (!snap.val()) db.ref('iqc/members').set(DEFAULT_MEMBERS); });
+
+  } else {
+    // LocalStorage fallback
+    try { const r=localStorage.getItem(LS.records); records=r?JSON.parse(r):[]; } catch(e){records=[];}
+    try { const s=localStorage.getItem(LS.suppliers); suppliers=s?JSON.parse(s):[...SEED_SUPPLIERS]; } catch(e){suppliers=[...SEED_SUPPLIERS];}
+    try { const p=localStorage.getItem(LS.parts); parts=p?JSON.parse(p):[...SEED_PARTS]; } catch(e){parts=[...SEED_PARTS];}
+    try { const m=localStorage.getItem(LS.members); members=m?JSON.parse(m):[...DEFAULT_MEMBERS]; } catch(e){members=[...DEFAULT_MEMBERS];}
+    document.getElementById('rtStatus').textContent = '⚠ Offline mode — data saved on this device only.';
+    buildLoginDropdown();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════════════════
+function buildLoginDropdown() {
+  const sel = document.getElementById('loginUser');
+  sel.innerHTML = '<option value="">-- Select member --</option>' +
+    members.map(m => `<option value="${m.id}">${m.name} (${m.id})</option>`).join('');
+}
+
+function doLogin() {
+  const uid = document.getElementById('loginUser').value;
+  const pin = document.getElementById('loginPin').value.trim();
+  const m = members.find(x => x.id === uid);
+  if (!m) { document.getElementById('loginAlert').innerHTML='<div class="alert alert-error">Please select a member.</div>'; return; }
+  if (m.pin !== pin) { document.getElementById('loginAlert').innerHTML='<div class="alert alert-error">Incorrect PIN. Try again.</div>'; return; }
+  currentUser = m;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('navUserName').textContent = m.name;
+  document.getElementById('drawerUserInfo').textContent = m.name + ' · ' + (m.role==='admin'?'Admin':'Team Member');
+  document.getElementById('f_inspector').value = m.name + ' (' + m.id + ')';
+  if (m.role !== 'admin') {
+    document.querySelectorAll('.admin-nav').forEach(el => el.style.display='none');
+  }
+  initData();
+  renderDashboard();
+  populateFormSelects();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginPin').value='';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginAlert').innerHTML='';
+  if (useFirebase) {
+    // Detach app listeners
+    db.ref('iqc/records').off();
+    db.ref('iqc/suppliers').off();
+    db.ref('iqc/parts').off();
+    db.ref('iqc/members').off();
+    db.ref('.info/connected').off();
+    // Reload members for login screen
+    preloadMembersAndShowLogin();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.dnav-item').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const idx = ['dashboard','entry','register','manage'];
+  document.querySelectorAll('.dnav-item')[idx.indexOf(name)]?.classList.add('active');
+  document.getElementById('bn_'+name)?.classList.add('active');
+  if (name==='dashboard') renderDashboard();
+  if (name==='register')  renderRegister();
+  if (name==='manage')    renderManage();
+  if (name==='entry')     populateFormSelects();
+}
+
+function toggleDrawer() {
+  const d = document.getElementById('drawer');
+  const o = document.getElementById('drawerOverlay');
+  d.classList.toggle('open');
+  o.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SEARCHABLE DROPDOWNS
+// ═══════════════════════════════════════════════════════════════════
+let ddTimers = {};
+
+function openDD(type) {
+  clearTimeout(ddTimers[type]);
+  filterDD(type);
+}
+
+function blurDD(type) {
+  ddTimers[type] = setTimeout(() => {
+    document.getElementById('dd_'+type+'_list').classList.remove('open');
+  }, 200);
+}
+
+function filterDD(type) {
+  const search = document.getElementById('f_'+type+'_search').value.toLowerCase();
+  const list = document.getElementById('dd_'+type+'_list');
+  let items = [];
+  if (type === 'supplier') {
+    items = suppliers.filter(s => s.toLowerCase().includes(search));
+    list.innerHTML = items.length
+      ? items.map(s => `<div class="dd-item" onmousedown="selectDD('supplier','${s.replace(/'/g,"\\'")}','${s.replace(/'/g,"\\'")}','')"> ${s}</div>`).join('')
+      : '<div class="dd-empty">No suppliers found</div>';
+  } else {
+    const uniqueParts = [...new Map(parts.map(p=>[p.partNo,p])).values()];
+    items = uniqueParts.filter(p => p.partNo.toLowerCase().includes(search) || p.desc.toLowerCase().includes(search));
+    list.innerHTML = items.length
+      ? items.map(p => `<div class="dd-item" onmousedown="selectDD('partNo','${p.partNo.replace(/'/g,"\\'")}','${p.partNo.replace(/'/g,"\\'")}','${p.desc.replace(/'/g,"\\'")}')">${p.partNo} — <small style='color:var(--sub)'>${p.desc}</small></div>`).join('')
+      : '<div class="dd-empty">No parts found</div>';
+  }
+  list.classList.add('open');
+}
+
+function selectDD(type, value, display, desc) {
+  document.getElementById('f_'+type+'_search').value = display;
+  document.getElementById('f_'+type).value = value;
+  document.getElementById('dd_'+type+'_list').classList.remove('open');
+  if (type === 'partNo' && desc) document.getElementById('f_partDesc').value = desc;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ENTRY FORM
+// ═══════════════════════════════════════════════════════════════════
+function populateFormSelects() {
+  const today = new Date().toISOString().split('T')[0];
+  ['f_invDate','f_recDate','f_inspDate'].forEach(id => { if(!document.getElementById(id).value) document.getElementById(id).value=today; });
+}
+
+function calcReject() {
+  const insp = Number(document.getElementById('f_inspQty').value)||0;
+  const ok   = Number(document.getElementById('f_okQty').value)||0;
+  const rej  = Math.max(0, insp-ok);
+  document.getElementById('f_rejectQty').value = rej;
+  document.getElementById('f_rejectPct').value  = insp>0 ? ((rej/insp)*100).toFixed(2)+'%' : '0%';
+}
+
+function submitEntry() {
+  const get = id => document.getElementById(id).value.trim();
+  const supplier = document.getElementById('f_supplier').value.trim();
+  const partNo   = document.getElementById('f_partNo').value.trim();
+  if (!get('f_invDate')||!supplier||!partNo||!get('f_recQty')||!get('f_inspQty')||!get('f_okQty')||!get('f_invNo')) {
+    document.getElementById('entryAlert').innerHTML='<div class="alert alert-error">Please fill all required fields (*).</div>';
+    return;
+  }
+  const insp=Number(get('f_inspQty'))||0, ok=Number(get('f_okQty'))||0, rej=Math.max(0,insp-ok);
+  const record = {
+    'INV Date':get('f_invDate'),'Received Date':get('f_recDate'),'Inspection Date':get('f_inspDate'),
+    'Invoice No':get('f_invNo'),'Supplier Name':supplier,'Part No':partNo,
+    'Part Description':get('f_partDesc'),'Received QTY':Number(get('f_recQty'))||0,
+    'Inspected QTY':insp,'OK Qty':ok,'Reject QTY':rej,
+    'Rejection %':insp>0?parseFloat(((rej/insp)*100).toFixed(2)):0,
+    'Reason Of Rej.':get('f_reason'),'Status':get('f_status'),
+    'Remark':get('f_remark'),'PDI/MTC Report':get('f_pdi'),
+    'Inspector':get('f_inspector'),'AddedBy':currentUser?currentUser.id:'',
+    '_id': Date.now()
+  };
+  saveRecord(record);
+  // Update local array immediately for instant UI feedback (Firebase listener will also refresh)
+  const existIdx = records.findIndex(r => r._id === record._id);
+  if (existIdx >= 0) records[existIdx] = record; else records.push(record);
+  renderDashboard(); renderRegister();
+  document.getElementById('entryAlert').innerHTML='<div class="alert alert-success">✓ Inspection saved! Visible to all team members.</div>';
+  clearForm(true);
+  toast('Entry saved & synced!');
+  setTimeout(()=>document.getElementById('entryAlert').innerHTML='',3000);
+}
+
+function clearForm(keepDate) {
+  ['f_invNo','f_reason','f_remark'].forEach(id=>document.getElementById(id).value='');
+  ['f_status','f_pdi'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  ['f_partDesc','f_recQty','f_inspQty','f_okQty','f_rejectQty','f_rejectPct'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_supplier_search').value='';
+  document.getElementById('f_supplier').value='';
+  document.getElementById('f_partNo_search').value='';
+  document.getElementById('f_partNo').value='';
+  if (!keepDate) {
+    const today=new Date().toISOString().split('T')[0];
+    ['f_invDate','f_recDate','f_inspDate'].forEach(id=>document.getElementById(id).value=today);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REGISTER TABLE
+// ═══════════════════════════════════════════════════════════════════
+function renderRegister() {
+  const months = getUniqueMonths();
+  const fm = document.getElementById('filterMonth');
+  const cur = fm.value;
+  fm.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option value="${m}" ${cur===m?'selected':''}>${getMonthLabel(m)}</option>`).join('');
+  const fSup    = document.getElementById('filterSupplier').value;
+  const fStatus = document.getElementById('filterStatus').value;
+  const fPartSearch = (document.getElementById('filterPartNo').value||'').toLowerCase();
+  const fSupSearch  = (document.getElementById('filterSupplierSearch').value||'').toLowerCase();
+  document.getElementById('filterSupplier').innerHTML='<option value="">All Suppliers</option>'+suppliers.sort().map(s=>`<option value="${s}" ${fSup===s?'selected':''}>${s}</option>`).join('');
+
+  let rows = records.filter(r => {
+    if (cur && getMonthKey(r['INV Date'])!==cur) return false;
+    if (fSup && r['Supplier Name']!==fSup) return false;
+    if (fStatus && r['Status']!==fStatus) return false;
+    if (fPartSearch && !(r['Part No']||'').toLowerCase().includes(fPartSearch)) return false;
+    if (fSupSearch && !(r['Supplier Name']||'').toLowerCase().includes(fSupSearch)) return false;
+    return true;
+  }).sort((a,b)=>new Date(b['INV Date'])-new Date(a['INV Date']));
+
+  document.getElementById('registerStats').textContent=`Showing ${rows.length} of ${records.length} records`;
+  const sc={CLOSED:'green',REJECT:'red',Rework:'amber',HOLD:'blue',Segregation:'gray'};
+  const isAdmin = currentUser && currentUser.role==='admin';
+
+  if (!rows.length) {
+    document.getElementById('registerBody').innerHTML=`<tr><td colspan="11" style="text-align:center;padding:40px;color:#aaa">No records found.</td></tr>`;
+    return;
+  }
+  document.getElementById('registerBody').innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r['INV Date']||''}</td>
+      <td style="font-size:11px">${r['Invoice No']||''}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;font-size:11px">${r['Supplier Name']||''}</td>
+      <td style="font-weight:600;font-size:11px">${r['Part No']||''}</td>
+      <td style="color:var(--green);font-weight:600">${r['OK Qty']||0}</td>
+      <td style="color:var(--red);font-weight:600">${r['Reject QTY']||0}</td>
+      <td>${r['Rejection %']||0}%</td>
+      <td><span class="badge badge-${sc[r['Status']]||'gray'}">${r['Status']||''}</span></td>
+      <td style="font-size:11px;color:var(--sub)">${r['Inspector']||'-'}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-amber" onclick="openEditModal(${r._id})">✏</button>
+        ${isAdmin?`<button class="btn btn-danger" onclick="deleteRecord(${r._id})">✕</button>`:''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function deleteRecord(id) {
+  if (currentUser?.role !== 'admin') { toast('Admin only'); return; }
+  if (!confirm('Delete this record?')) return;
+  deleteRecordData(id);
+  records = records.filter(r => r._id !== id);
+  renderRegister(); renderDashboard();
+  toast('Record deleted.');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EDIT MODAL
+// ═══════════════════════════════════════════════════════════════════
+function openEditModal(id) {
+  const r = records.find(x=>x._id===id);
+  if (!r) return;
+  editingId = id;
+  editInspQty = Number(r['Inspected QTY'])||0;
+  document.getElementById('e_okQty').value = r['OK Qty']||0;
+  document.getElementById('e_rejectQty').value = r['Reject QTY']||0;
+  document.getElementById('e_status').value = r['Status']||'CLOSED';
+  document.getElementById('e_pdi').value = r['PDI/MTC Report']||'';
+  document.getElementById('e_reason').value = r['Reason Of Rej.']||'';
+  document.getElementById('e_remark').value = r['Remark']||'';
+  document.getElementById('editAlert').innerHTML='';
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editingId = null;
+}
+
+function calcEditReject() {
+  const ok  = Number(document.getElementById('e_okQty').value)||0;
+  const rej = Math.max(0, editInspQty - ok);
+  document.getElementById('e_rejectQty').value = rej;
+}
+
+function saveEdit() {
+  const r = records.find(x=>x._id===editingId);
+  if (!r) return;
+  const ok  = Number(document.getElementById('e_okQty').value)||0;
+  const rej = Math.max(0, editInspQty - ok);
+  r['OK Qty']        = ok;
+  r['Reject QTY']    = rej;
+  r['Rejection %']   = editInspQty>0?parseFloat(((rej/editInspQty)*100).toFixed(2)):0;
+  r['Status']        = document.getElementById('e_status').value;
+  r['PDI/MTC Report']= document.getElementById('e_pdi').value;
+  r['Reason Of Rej.']= document.getElementById('e_reason').value.trim();
+  r['Remark']        = document.getElementById('e_remark').value.trim();
+  r['EditedBy']      = currentUser?currentUser.id:'';
+  r['EditedAt']      = Date.now();
+  saveRecord(r);
+  renderRegister(); renderDashboard();
+  closeEditModal();
+  toast('Record updated & synced!');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MANAGE (admin only)
+// ═══════════════════════════════════════════════════════════════════
+function renderManage() {
+  const isAdmin = currentUser && currentUser.role==='admin';
+  document.getElementById('manageLockOverlay').style.display = isAdmin ? 'none' : 'block';
+  document.getElementById('manageContent').style.opacity = isAdmin ? '1' : '0.3';
+  document.getElementById('manageContent').style.pointerEvents = isAdmin ? 'auto' : 'none';
+
+  // Members
+  document.getElementById('memberList').innerHTML = members.map(m=>`
+    <div class="member-row">
+      <div class="member-avatar">${m.name.charAt(0).toUpperCase()}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}</div>
+        <div class="member-id">ID: ${m.id}</div>
+      </div>
+      <span class="member-role ${m.role==='admin'?'role-admin':'role-member'}">${m.role==='admin'?'Admin':'Member'}</span>
+      ${m.id!=='ADMIN001'?`<button class="btn btn-danger btn-sm" onclick="removeMember('${m.id.replace(/'/g,"\\'")}')">✕</button>`:''}
+    </div>
+  `).join('');
+
+  // Suppliers
+  document.getElementById('supplierTags').innerHTML=suppliers.sort().map(s=>
+    `<div class="tag">${s}<button onclick="removeSupplier('${s.replace(/'/g,"\\'")}')">✕</button></div>`
+  ).join('');
+
+  // Parts
+  document.getElementById('partTags').innerHTML=[...new Map(parts.map(p=>[p.partNo,p])).values()].map(p=>
+    `<div class="tag" style="background:#e8f5e9;color:var(--green)">${p.partNo}<button onclick="removePart('${p.partNo.replace(/'/g,"\\'")}')">✕</button></div>`
+  ).join('');
+}
+
+function addMember() {
+  if (currentUser?.role!=='admin'){toast('Admin only');return;}
+  const name = document.getElementById('newMemberName').value.trim();
+  const id   = document.getElementById('newMemberId').value.trim().toUpperCase();
+  const pin  = document.getElementById('newMemberPin').value.trim();
+  const role = document.getElementById('newMemberRole').value;
+  if(!name||!id||!pin){toast('Fill all member fields');return;}
+  if(members.find(m=>m.id===id)){toast('Member ID already exists');return;}
+  members.push({id,name,pin,role});
+  saveAll();
+  renderManage();
+  buildLoginDropdown();
+  ['newMemberName','newMemberId','newMemberPin'].forEach(x=>document.getElementById(x).value='');
+  toast('Member added!');
+}
+
+function removeMember(id) {
+  if(currentUser?.role!=='admin'){toast('Admin only');return;}
+  if(!confirm('Remove member '+id+'?'))return;
+  members=members.filter(m=>m.id!==id);
+  saveAll(); renderManage(); buildLoginDropdown();
+  toast('Member removed.');
+}
+
+function addSupplier() {
+  if(currentUser?.role!=='admin'){toast('Admin only');return;}
+  const val=document.getElementById('newSupplier').value.trim().toUpperCase();
+  if(!val)return;
+  if(suppliers.includes(val)){toast('Supplier already exists');return;}
+  suppliers.push(val); saveAll(); renderManage();
+  document.getElementById('newSupplier').value=''; toast('Supplier added!');
+}
+
+function removeSupplier(name) {
+  if(currentUser?.role!=='admin'){toast('Admin only');return;}
+  suppliers=suppliers.filter(s=>s!==name); saveAll(); renderManage(); toast('Supplier removed.');
+}
+
+function addPart() {
+  if(currentUser?.role!=='admin'){toast('Admin only');return;}
+  const pn=document.getElementById('newPartNo').value.trim();
+  const pd=document.getElementById('newPartDesc').value.trim();
+  if(!pn||!pd){toast('Enter Part No and Description');return;}
+  parts.push({partNo:pn,desc:pd}); saveAll(); renderManage();
+  document.getElementById('newPartNo').value=''; document.getElementById('newPartDesc').value='';
+  toast('Part added!');
+}
+
+function removePart(pn) {
+  if(currentUser?.role!=='admin'){toast('Admin only');return;}
+  parts=parts.filter(p=>p.partNo!==pn); saveAll(); renderManage(); toast('Part removed.');
+}
+
+function exportCSV() {
+  const cols=['INV Date','Received Date','Inspection Date','Invoice No','Supplier Name','Part No','Part Description','Received QTY','Inspected QTY','OK Qty','Reject QTY','Rejection %','Reason Of Rej.','Status','Remark','PDI/MTC Report','Inspector'];
+  const rows=[cols.join(',')];
+  records.forEach(r=>{ rows.push(cols.map(c=>{const v=(r[c]!==undefined&&r[c]!==null)?String(r[c]):'';return v.includes(',')?`"${v}"`:v;}).join(',')); });
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='IQC_Register_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('CSV downloaded!');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+function getMonthKey(d){if(!d)return'';const x=new Date(d);return isNaN(x)?'':x.toISOString().slice(0,7);}
+function getMonthLabel(k){const[y,m]=k.split('-');return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]+' '+y;}
+function getUniqueMonths(){return[...new Set(records.map(r=>getMonthKey(r['INV Date'])).filter(Boolean))].sort();}
+
+function renderDashboard() {
+  const months=getUniqueMonths();
+  const sel=document.getElementById('dashMonthFilter');
+  const selMonth=sel.value||'all';
+  sel.innerHTML='<option value="all">All Months</option>'+months.map(m=>`<option value="${m}" ${selMonth===m?'selected':''}>${getMonthLabel(m)}</option>`).join('');
+  const filtered=selMonth==='all'?records:records.filter(r=>getMonthKey(r['INV Date'])===selMonth);
+  const totalInsp=filtered.reduce((s,r)=>s+(Number(r['Inspected QTY'])||0),0);
+  const totalOk=filtered.reduce((s,r)=>s+(Number(r['OK Qty'])||0),0);
+  const totalRej=filtered.reduce((s,r)=>s+(Number(r['Reject QTY'])||0),0);
+  const accRate=totalInsp>0?((totalOk/totalInsp)*100).toFixed(1):'0.0';
+  const rejRate=totalInsp>0?((totalRej/totalInsp)*100).toFixed(1):'0.0';
+  document.getElementById('summaryCards').innerHTML=`
+    <div class="card"><div class="card-label">Total Entries</div><div class="card-value">${filtered.length}</div><div class="card-sub">inspections</div></div>
+    <div class="card"><div class="card-label">Inspected QTY</div><div class="card-value">${totalInsp.toLocaleString()}</div><div class="card-sub">units</div></div>
+    <div class="card green"><div class="card-label">Acceptance Rate</div><div class="card-value">${accRate}%</div><div class="card-sub">${totalOk.toLocaleString()} OK</div></div>
+    <div class="card red"><div class="card-label">Rejection Rate</div><div class="card-value">${rejRate}%</div><div class="card-sub">${totalRej.toLocaleString()} rejected</div></div>
+  `;
+  const monthData={};
+  records.forEach(r=>{const mk=getMonthKey(r['INV Date']);if(!mk)return;if(!monthData[mk])monthData[mk]={ok:0,rej:0,insp:0};monthData[mk].ok+=Number(r['OK Qty'])||0;monthData[mk].rej+=Number(r['Reject QTY'])||0;monthData[mk].insp+=Number(r['Inspected QTY'])||0;});
+  if(monthlyChart){monthlyChart.destroy();monthlyChart=null;}
+  if(months.length>0){
+    monthlyChart=new Chart(document.getElementById('monthlyChart'),{type:'bar',data:{labels:months.map(m=>getMonthLabel(m)),datasets:[{label:'Acceptance %',data:months.map(m=>monthData[m]&&monthData[m].insp>0?parseFloat(((monthData[m].ok/monthData[m].insp)*100).toFixed(1)):0),backgroundColor:'#43a047',borderRadius:4},{label:'Rejection %',data:months.map(m=>monthData[m]&&monthData[m].insp>0?parseFloat(((monthData[m].rej/monthData[m].insp)*100).toFixed(1)):0),backgroundColor:'#e53935',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom'}},scales:{y:{max:100,ticks:{callback:v=>v+'%'}}}}});
+  }
+  const supRej={};
+  records.forEach(r=>{if(r['Supplier Name'])supRej[r['Supplier Name']]=(supRej[r['Supplier Name']]||0)+(Number(r['Reject QTY'])||0);});
+  const sorted=Object.entries(supRej).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxVal=sorted.length>0?sorted[0][1]:1;
+  document.getElementById('supplierBars').innerHTML=sorted.length>0?sorted.map(([name,val])=>`
+    <div class="supplier-bar">
+      <div class="supplier-bar-label" title="${name}">${name}</div>
+      <div class="supplier-bar-track"><div class="supplier-bar-fill" style="width:${maxVal>0?Math.round((val/maxVal)*100):0}%"></div></div>
+      <div class="supplier-bar-val">${val.toLocaleString()}</div>
+    </div>`).join(''):'<div style="color:#aaa;font-size:13px;padding:20px 0">No rejection data yet</div>';
+  const reasons={};
+  filtered.forEach(r=>{const reason=(r['Reason Of Rej.']||'').trim();if(reason&&r['Reject QTY']>0){reason.split(/[,\/]/).forEach(p=>{const k=p.trim();if(k)reasons[k]=(reasons[k]||0)+(Number(r['Reject QTY'])||0);});}});
+  const topReasons=Object.entries(reasons).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(reasonChart){reasonChart.destroy();reasonChart=null;}
+  if(topReasons.length>0){reasonChart=new Chart(document.getElementById('reasonChart'),{type:'doughnut',data:{labels:topReasons.map(r=>r[0]),datasets:[{data:topReasons.map(r=>r[1]),backgroundColor:['#e53935','#fb8c00','#f9a825','#43a047','#1e88e5','#8e24aa','#00acc1','#6d4c41']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right'}}}});}
+  if(qtyChart){qtyChart.destroy();qtyChart=null;}
+  if(months.length>0){qtyChart=new Chart(document.getElementById('qtyChart'),{type:'bar',data:{labels:months.map(m=>getMonthLabel(m)),datasets:[{label:'Inspected QTY',data:months.map(m=>monthData[m]?monthData[m].insp:0),backgroundColor:'#1976d2',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+function toast(msg) {
+  const t=document.getElementById('toastMsg');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none',2500);
+}
+
+// ── DETECT file:// and warn user ──────────────────────────────────
+if (window.location.protocol === 'file:') {
+  document.getElementById('fileWarning').style.display = 'block';
+  // Force offline mode - Firebase won't work from file://
+  useFirebase = false;
+}
+
+// ── PRE-LOGIN: Load members from Firebase before showing login screen ──
+function preloadMembersAndShowLogin() {
+  if (useFirebase) {
+    document.getElementById('loginAlert').innerHTML = '<div class="alert alert-info">⏳ Loading team members…</div>';
+    db.ref('iqc/members').once('value', snap => {
+      const val = snap.val();
+      if (val) {
+        members = Array.isArray(val) ? val : Object.values(val);
+      } else {
+        // First run — seed members
+        db.ref('iqc/members').set(DEFAULT_MEMBERS);
+      }
+      buildLoginDropdown();
+      document.getElementById('loginAlert').innerHTML = '';
+    }).catch(err => {
+      document.getElementById('loginAlert').innerHTML = '<div class="alert alert-error">⚠ Cannot connect to server. Check internet.</div>';
+      buildLoginDropdown(); // fallback to seed
+    });
+
+    // Also keep members in sync while on login screen
+    db.ref('iqc/members').on('value', snap => {
+      const val = snap.val();
+      if (val) {
+        members = Array.isArray(val) ? val : Object.values(val);
+        buildLoginDropdown();
+      }
+    });
+  } else {
+    // LocalStorage fallback
+    try { const m=localStorage.getItem(LS.members); if(m) members=JSON.parse(m); } catch(e){}
+    buildLoginDropdown();
+  }
+}
+
+// INIT — load members immediately on page open
+preloadMembersAndShowLogin();
+</script>
+</body>
+</html>
